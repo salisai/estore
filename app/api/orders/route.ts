@@ -7,10 +7,10 @@ const mapOrder = (order: any) => ({
   id: order.id,
   userId: order.user_id,
   items: order.items,
-  total: order.total,
+  total: Number(order.total),
   date: order.created_at,
   status: order.status,
-  stripeSessionId: order.stripe_session_id
+  stripeSessionId: order.stripe_session_id ?? undefined
 });
 
 export const GET = async (req: NextRequest) => {

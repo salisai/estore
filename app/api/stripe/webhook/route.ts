@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -25,14 +26,21 @@ export const POST = async (req: NextRequest) => {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as { metadata?: Record<string, string>; id: string };
+    const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
-    if (orderId) {
+    const paid = session.payment_status === "paid";
+
+    if (orderId && paid) {
       const supabase = createSupabaseAdmin();
-      await supabase
+      const { error } = await supabase
         .from("orders")
         .update({ status: "paid", stripe_session_id: session.id })
         .eq("id", orderId);
+
+      if (error) {
+        console.error("orders update after checkout.session.completed", error);
+        return NextResponse.json({ message: "Database update failed" }, { status: 500 });
+      }
     }
   }
 

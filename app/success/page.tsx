@@ -7,13 +7,17 @@ import { Check } from "lucide-react";
 
 const SuccessContent = () => {
   const router = useRouter();
-  const { clearCart } = useStore();
+  const { clearCart, refreshOrders } = useStore();
   const searchParams = useSearchParams();
-  // Assuming searchParams might be used for session_id etc in real app, preventing build error
+  const sessionId = searchParams.get("session_id");
 
   useEffect(() => {
     clearCart();
   }, [clearCart]);
+
+  useEffect(() => {
+    void refreshOrders();
+  }, [refreshOrders]);
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 animate-in fade-in duration-700">
@@ -21,11 +25,16 @@ const SuccessContent = () => {
         <Check className="text-white" size={32} />
       </div>
       <h1 className="text-3xl md:text-5xl font-light tracking-tight text-neutral-950 mb-6 text-center">
-        Order Confirmed
+        Payment successful
       </h1>
-      <p className="text-neutral-500 text-[15px] mb-10 max-w-md text-center leading-relaxed">
-        Thank you for your purchase. We have received your order and one of our artisans will begin preparing it shortly.
+      <p className="text-neutral-500 text-[15px] mb-6 max-w-md text-center leading-relaxed">
+        Thank you for your purchase. Your order was created at checkout; once Stripe finishes processing, it will appear as paid in the admin orders list.
       </p>
+      {sessionId ? (
+        <p className="text-[11px] text-neutral-400 mb-10 max-w-md text-center font-mono break-all">
+          Stripe session: {sessionId}
+        </p>
+      ) : null}
       <button
         onClick={() => router.push("/")}
         className="bg-neutral-950 text-white px-10 py-4 text-[13px] font-medium tracking-widest uppercase hover:bg-neutral-800 transition-colors"

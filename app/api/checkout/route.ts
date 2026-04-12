@@ -31,11 +31,16 @@ export const POST = async (req: NextRequest) => {
         throw new Error("Product mismatch");
       }
 
+      const unitPrice = Number(product.price);
+      if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+        throw new Error("Invalid product price");
+      }
+
       return {
         id: product.id,
         quantity: Math.max(1, quantity),
         name: product.name,
-        price: product.price,
+        price: unitPrice,
         image: product.image,
         category: product.category
       };

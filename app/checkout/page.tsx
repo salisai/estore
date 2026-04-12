@@ -54,22 +54,24 @@ const CheckoutPage = () => {
         },
         body: JSON.stringify({
           items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
-          successUrl: `${origin}/success`,
+          successUrl: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${origin}/checkout`
         })
       });
 
+      const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error("Unable to create Stripe session");
+        throw new Error(payload.message || "Unable to create Stripe session");
       }
 
-      const payload = await res.json();
       if (payload.url) {
         window.location.href = payload.url;
+      } else {
+        throw new Error("No checkout URL returned");
       }
     } catch (error) {
       console.error(error);
-      alert("Checkout failed. Please try again.");
+      alert(error instanceof Error ? error.message : "Checkout failed. Please try again.");
     } finally {
       setLoading(false);
     }

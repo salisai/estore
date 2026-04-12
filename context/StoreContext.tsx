@@ -251,6 +251,16 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     if (!token) throw new Error("Unauthorized");
 
     const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const serializableItems = cart.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      category: item.category,
+      description: item.description,
+      image: typeof item.image === "string" ? item.image : null,
+      stock: item.stock
+    }));
 
     const res = await fetch("/api/orders", {
       method: "POST",
@@ -259,7 +269,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
-        items: cart,
+        items: serializableItems,
         total,
         stripeSessionId
       })

@@ -6,5 +6,7 @@ if (!stripeSecret) {
   console.warn("Stripe secret key missing. Checkout will be disabled.");
 }
 
-export const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: "2024-06-20" }) : null;
+export const stripe = stripeSecret 
+  ? new Stripe(stripeSecret, { apiVersion: "2024-06-20" }) 
+  : null;
 

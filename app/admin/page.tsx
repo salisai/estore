@@ -32,13 +32,13 @@ type ContactMessage = {
   email: string;
   subject: string;
   message: string;
-  status: 'unread' | 'read';
+  status: "unread" | "read" | "replied";
   created_at: string;
-}
+};
 
 const AdminPage = () => {
   const router = useRouter();
-  const { user, products, orders, addProduct, deleteProduct, uploadImage } = useStore();
+  const { user, products, orders, addProduct, deleteProduct, uploadImage, refreshOrders } = useStore();
   const [isSaving, setIsSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "catalog" | "orders" | "messages">("overview");
@@ -78,7 +78,10 @@ const AdminPage = () => {
     if (activeTab === "messages") {
       fetchMessages();
     }
-  }, [activeTab]);
+    if (activeTab === "orders") {
+      void refreshOrders();
+    }
+  }, [activeTab, refreshOrders]);
 
   const markAsRead = async (id: string) => {
     const { error } = await supabaseBrowser
@@ -113,7 +116,8 @@ const AdminPage = () => {
     return null;
   }
 
-  const revenue = orders.reduce((acc, order) => acc + order.total, 0);
+  const paidLike = (s: string) => s === "paid" || s === "shipped" || s === "delivered";
+  const revenue = orders.filter((o) => paidLike(o.status)).reduce((acc, order) => acc + Number(order.total), 0);
   const pendingOrders = orders.filter((order) => order.status === "pending").length;
   const topProducts = [...products]
     .sort((a, b) => b.stock - a.stock)
@@ -121,10 +125,12 @@ const AdminPage = () => {
 
   const salesTrend = useMemo(() => {
     const map = new Map<string, number>();
-    orders.forEach((order) => {
-      const date = new Date(order.date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      map.set(date, (map.get(date) || 0) + order.total);
-    });
+    orders
+      .filter((order) => paidLike(order.status))
+      .forEach((order) => {
+        const date = new Date(order.date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        map.set(date, (map.get(date) || 0) + Number(order.total));
+      });
     return Array.from(map.entries()).map(([name, total]) => ({ name, total }));
   }, [orders]);
 
@@ -182,7 +188,9 @@ const AdminPage = () => {
                 <CardTitle>${revenue.toFixed(2)}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-gray-500">Across {orders.length} orders</p>
+                <p className="text-xs text-gray-500">
+                  Only paid, shipped, or delivered (pending checkout excluded). {orders.length} order row{orders.length === 1 ? "" : "s"} in Supabase.
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -391,6 +399,70 @@ const AdminPage = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {activeTab === "orders" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Orders</CardTitle>
+            <CardDescription>
+              Rows come from Supabase <code className="text-xs">orders</code>. Pending = checkout started; paid = Stripe webhook (
+              <code className="text-xs">checkout.session.completed</code>) confirmed payment.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {orders.length === 0 ? (
+              <p className="text-sm text-gray-500 py-8 text-center">No orders yet.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Lines</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Stripe</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => {
+                    const lines = Array.isArray(order.items) ? order.items.length : 0;
+                    const stripeId = order.stripeSessionId;
+                    return (
+                      <TableRow key={order.id}>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {new Date(order.date).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-gray-600 max-w-[140px] truncate" title={order.userId}>
+                          {order.userId}
+                        </TableCell>
+                        <TableCell>{lines}</TableCell>
+                        <TableCell>${Number(order.total).toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              order.status === "paid" || order.status === "shipped" || order.status === "delivered"
+                                ? "default"
+                                : order.status === "pending"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-[10px] text-gray-500 max-w-[160px] truncate" title={stripeId || ""}>
+                          {stripeId || "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Messages Tab */}
