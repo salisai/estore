@@ -1,0 +1,9 @@
+
+{
+"crons": [
+    {
+    "path": "/api/cron/embed-products",
+    "schedule": "0 3 * * *"
+    }
+]
+}
