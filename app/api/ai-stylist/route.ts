@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getAssistantResponse } from "@/services/geminiService";
+import { getAssistantResponse } from "@/services/openaiService";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { embedText } from "@/lib/embeddings";
 

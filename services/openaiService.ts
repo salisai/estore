@@ -1,7 +1,7 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import OpenAI from "openai";
 import { Product } from "@/types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface Faq {
   question: string;
@@ -24,7 +24,7 @@ export const getAssistantResponse = async ({
   products: Product[];
   faqs: Faq[];
 }) => {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     console.warn("No API Key found. Returning mock response.");
     return {
       type: "UNAVAILABLE",
@@ -72,34 +72,42 @@ Return ONLY JSON.
 `.trim();
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            type: {
-              type: Type.STRING,
-              enum: ["PRODUCT_RECOMMENDATION", "FAQ_ANSWER", "GENERAL_ADVICE", "UNAVAILABLE"],
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-nano",
+      messages: [{ role: "user", content: prompt }],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "stylist_response",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              type: {
+                type: "string",
+                enum: ["PRODUCT_RECOMMENDATION", "FAQ_ANSWER", "GENERAL_ADVICE", "UNAVAILABLE"],
+              },
+              recommendedProductIds: {
+                type: "array",
+                items: { type: "string" },
+              },
+              message: { type: "string" },
             },
-            recommendedProductIds: { type: Type.ARRAY, items: { type: Type.STRING } },
-            message: { type: Type.STRING },
+            required: ["type", "recommendedProductIds", "message"],
+            additionalProperties: false,
           },
-          required: ["type", "recommendedProductIds", "message"],
         },
       },
     });
 
-    const result = JSON.parse(response.text || "{}");
+    const result = JSON.parse(response.choices[0]?.message?.content || "{}");
     return {
       type: result.type ?? "UNAVAILABLE",
       recommendedIds: result.recommendedProductIds ?? [],
       message: result.message ?? "Here's what we found for you.",
     };
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("OpenAI API Error:", error);
     return {
       type: "UNAVAILABLE",
       recommendedIds: [],

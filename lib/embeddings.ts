@@ -1,23 +1,25 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+/** Keep 768 to match the existing pgvector column size. */
+const EMBEDDING_DIMENSIONS = 768;
 
 export async function embedText(
   text: string,
-  taskType: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" = "RETRIEVAL_QUERY"
+  _taskType: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" = "RETRIEVAL_QUERY"
 ) {
-  const res = await ai.models.embedContent({
-    model: "text-embedding-004",
-    contents: text,
-    config: { outputDimensionality: 768, taskType },
+  const res = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: text,
+    dimensions: EMBEDDING_DIMENSIONS,
   });
 
-  const embedding = res.embeddings?.[0]?.values;
+  const embedding = res.data[0]?.embedding;
 
   if (!embedding) {
-    throw new Error("Failed to generate embedding: empty response from Gemini API");
+    throw new Error("Failed to generate embedding: empty response from OpenAI API");
   }
-
 
   return embedding;
 }
