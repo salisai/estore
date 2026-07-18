@@ -45,7 +45,7 @@ const AiStylist = ({ isOpen, onClose }: AiStylistProps) => {
       const matchedProducts = products.filter((p) => payload.recommendedIds?.includes(p.id));
       setResult({
         products: matchedProducts,
-        reasoning: payload.reasoning
+        reasoning: payload.message ?? payload.reasoning ?? ""
       });
     } catch (err) {
       console.error(err);

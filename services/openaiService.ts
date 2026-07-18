@@ -64,7 +64,7 @@ USER MESSAGE: "${query}"
 Rules:
 1. Classify the message into exactly one type: PRODUCT_RECOMMENDATION, FAQ_ANSWER, GENERAL_ADVICE, or UNAVAILABLE.
 2. Only recommend products from the RETRIEVED PRODUCTS list. Never recommend an item with Stock: 0 — if the user is asking about something that appears with Stock: 0, honestly tell them it's currently out of stock rather than suggesting it.
-3. If nothing in RETRIEVED PRODUCTS reasonably matches what the user wants, set type to UNAVAILABLE, return an empty array, and say so honestly instead of forcing a recommendation.
+3. Prefer PRODUCT_RECOMMENDATION whenever retrieved products are in a relevant category (rings, necklaces, etc.), even if metal/color/material is not an exact match — briefly note the difference and still recommend the closest options. Only use UNAVAILABLE with an empty array when the retrieved list is empty or clearly unrelated.
 4. If the question is about policy, shipping, returns, materials care, etc., use FAQ_ANSWER and answer only from the FAQ entries given. If no FAQ entry covers it, say you don't have that information rather than guessing.
 5. If it's a general styling question with no direct product match yet, use GENERAL_ADVICE — give real advice, and optionally point to relevant categories from the retrieved products if any fit.
 6. Keep the tone warm, concise, and elegant. No markdown, no bullet lists in "message".
