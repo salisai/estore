@@ -11,6 +11,7 @@ export const POST = async (req: NextRequest) => {
     if (!query?.trim()) {
       return NextResponse.json({ message: "Missing query" }, { status: 400 });
     }
+    
     const supabase = createSupabaseAdmin();
     const queryEmbedding = await embedText(query, "RETRIEVAL_QUERY")
 
